@@ -1,4 +1,7 @@
 import { Injectable } from '@nestjs/common';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { NotFoundException } from '@nestjs/common';
 
 @Injectable()
 export class UsersService {
@@ -23,49 +26,59 @@ export class UsersService {
 
   findAll(role?: 'INTERN' | 'ENGINEER' | 'ADMIN') {
     if (role) {
-      return this.users.filter((user) => user.role === role);
+      const rolesArray = this.users.filter((user) => user.role === role);
+      if (rolesArray.length === 0) {
+        throw new NotFoundException(`Role ${role} not found`);
+      }
+      return rolesArray;
     }
     return this.users;
   }
 
   findOne(id: number) {
     const user = this.users.find((user) => user.id === id);
-    return this.users.find((user) => user.id === +id);
+    if (!user) {
+      throw new NotFoundException(`User not found`);
+    }
+    return user;
   }
 
-  create(user: {
-    name: string;
-    role: 'INTERN' | 'ENGINEER' | 'ADMIN';
-    email: string;
-  }) {
+  create(createUserDto: CreateUserDto) {
     const usersByHighestId = this.users.sort((a, b) => b.id - a.id);
     const newUser = {
       id: usersByHighestId[0].id + 1,
-      ...user,
+      ...createUserDto,
     };
     this.users.push(newUser);
     return newUser;
   }
 
-  update(
-    id: number,
-    updatedUser: {
-      name: string;
-      role: 'INTERN' | 'ENGINEER' | 'ADMIN';
-      email: string;
-    },
-  ) {
-    const index = this.users.findIndex((user) => user.id === +id);
-    if (index) {
-      this.users[index] = { id: +id, ...updatedUser };
-      return this.users[index];
-    }
+  update(id: number, updateUserDto: UpdateUserDto) {
+    // const index = this.users.findIndex((user) => user.id === +id);
+    // if (index) {
+    //   this.users[index] = { id: +id, ...updatedUser };
+    //   return this.users[index];
+    // }
+    // this.users.forEach((user) => {
+    //   if (user.id === id) {
+    //     user = { ...user, ...updatedUser };
+    //   }
+    //   //   return user;
+    // });
+    // return this.users[index];
+    this.users = this.users.map((user) => {
+      if (user.id === id) {
+        return { ...user, ...updateUserDto };
+      }
+      return user;
+    });
+    return this.findOne(id);
   }
 
   delete(id: number) {
     const index = this.users.findIndex((user) => user.id === id);
     const deletedUser = this.users[index];
     this.users = this.users.filter((user) => user.id !== id);
-    return deletedUser;
+    return { deletedUser: deletedUser, users: this.users };
   }
 }
