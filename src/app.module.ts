@@ -14,6 +14,7 @@ import { APP_GUARD } from '@nestjs/core';
     EmployeesModule,
     ThrottlerModule.forRoot([
       {
+        name: 'short',
         limit: 10,
         ttl: 60,
       },
